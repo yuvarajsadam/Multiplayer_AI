@@ -1,0 +1,46 @@
+{
+  "sampleRooms": [
+    {
+      "roomId": "demo-room",
+      "name": "Collaborative AI Workspace Demo",
+      "activeRole": "Coder AI",
+      "currentDraftPrompt": "Refactor Express POST route to validate payload schema.",
+      "createdAt": "2026-07-28T10:00:00.000Z"
+    }
+  ],
+  "sampleUsers": [
+    {
+      "id": "usr_001",
+      "name": "Alex Rivers",
+      "color": "#3B82F6",
+      "role": "Frontend Engineer"
+    },
+    {
+      "id": "usr_002",
+      "name": "Elena Rostova",
+      "color": "#8B5CF6",
+      "role": "System Architect"
+    }
+  ],
+  "sampleMessages": [
+    {
+      "messageId": "msg_101",
+      "roomId": "demo-room",
+      "prompt": "Design a high-throughput WebSocket system architecture with Node.js and Socket.io.",
+      "response": "### Architecture Design\n\n1. **State Engine**: In-memory socket store mapped to Mongoose persistence.\n2. **Pub/Sub Broker**: Redis Adapter for cross-node event propagation.\n3. **Streaming**: Token-by-token HTTP/2 or WebSockets chunks for minimum latency.",
+      "role": "Architect AI",
+      "author": {
+        "id": "usr_002",
+        "name": "Elena Rostova",
+        "color": "#8B5CF6"
+      },
+      "version": 1,
+      "versions": [],
+      "votes": {
+        "upvotes": ["usr_001"],
+        "downvotes": []
+      },
+      "timestamp": "2026-07-28T10:05:00.000Z"
+    }
+  ]
+}

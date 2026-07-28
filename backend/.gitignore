@@ -1,0 +1,17 @@
+# Backend Dependencies
+node_modules/
+
+# Environment Variables & Secrets
+.env
+.env.local
+*.env
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# System & IDE
+.DS_Store
+.vscode/
