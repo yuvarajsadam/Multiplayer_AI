@@ -20,7 +20,7 @@ const server = http.createServer(app);
 
 // CORS configuration for REST & WebSockets
 app.use(cors({
-  origin: '*',
+  origin: process.env.CLIENT_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
