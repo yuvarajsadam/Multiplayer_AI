@@ -1,17 +1,33 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { getRoomHistoryApi, getUserRoomsApi } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export const SocketProvider = ({ children }) => {
+  const auth = useAuth();
+  const saasUser = auth?.user;
+  const saasToken = auth?.token;
+
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [user, setUser] = useState(() => {
+    if (saasUser) {
+      return {
+        id: saasUser.id,
+        name: saasUser.name,
+        email: saasUser.email,
+        color: saasUser.avatarColor || '#3B82F6',
+        tier: saasUser.tier || 'free'
+      };
+    }
     const saved = localStorage.getItem('ai_workspace_user');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
     const id = 'user_' + Math.random().toString(36).substring(2, 9);
     const name = 'Engineer #' + Math.floor(100 + Math.random() * 900);
     const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
@@ -36,6 +52,21 @@ export const SocketProvider = ({ children }) => {
   const [streamingMessage, setStreamingMessage] = useState(null);
 
   const socketRef = useRef(null);
+
+  // Sync user state with SaaS JWT user profile
+  useEffect(() => {
+    if (saasUser) {
+      const updatedUser = {
+        id: saasUser.id,
+        name: saasUser.name,
+        email: saasUser.email,
+        color: saasUser.avatarColor || '#3B82F6',
+        tier: saasUser.tier || 'free'
+      };
+      setUser(updatedUser);
+      localStorage.setItem('ai_workspace_user', JSON.stringify(updatedUser));
+    }
+  }, [saasUser]);
 
   // Initialize Socket Connection with JWT Auth Handshake
   useEffect(() => {
@@ -86,6 +117,17 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     refreshUserRooms();
   }, [refreshUserRooms]);
+
+  // Handle Token Change: Update socket handshake auth and reconnect
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.auth = { token: saasToken || '' };
+      if (socketRef.current.connected) {
+        socketRef.current.disconnect().connect();
+      }
+    }
+    refreshUserRooms();
+  }, [saasToken, refreshUserRooms]);
 
   // Bind Socket Event Listeners for active room
   useEffect(() => {

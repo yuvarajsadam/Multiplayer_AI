@@ -9,6 +9,15 @@ const api = axios.create({
   }
 });
 
+// Intercept requests to dynamically attach JWT token from localStorage
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('ai_saas_jwt_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
 export const createRoomApi = async (name) => {
   const response = await api.post('/rooms/create', { name });
   return response.data;

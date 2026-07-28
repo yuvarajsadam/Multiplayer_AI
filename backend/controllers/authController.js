@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Usage = require('../models/Usage');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { getIsConnected } = require('../config/db');
 const { JWT_SECRET } = require('../middleware/authMiddleware');
@@ -14,6 +15,7 @@ const generateToken = (user) => {
       id: user.id,
       email: user.email,
       name: user.name,
+      avatarColor: user.avatarColor || '#3B82F6',
       tier: user.tier || 'free'
     },
     JWT_SECRET,
@@ -76,10 +78,14 @@ const register = async (req, res) => {
         return res.status(400).json({ success: false, error: 'User already registered' });
       }
 
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
       const memUser = {
         id: userId,
         name,
         email: email.toLowerCase(),
+        password: hashedPassword,
         avatarColor,
         tier: 'free',
         monthlyTokenQuota: 100000,
@@ -90,11 +96,13 @@ const register = async (req, res) => {
       inMemoryUsers.set(email.toLowerCase(), memUser);
       const token = generateToken(memUser);
 
+      const { password: _, ...userWithoutPassword } = memUser;
+
       return res.status(201).json({
         success: true,
         message: 'Registered successfully (Memory mode)',
         token,
-        user: memUser
+        user: userWithoutPassword
       });
     }
   } catch (error) {
@@ -144,12 +152,18 @@ const login = async (req, res) => {
         return res.status(401).json({ success: false, error: 'Invalid credentials' });
       }
 
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      }
+
       const token = generateToken(user);
+      const { password: _, ...userWithoutPassword } = user;
       return res.status(200).json({
         success: true,
         message: 'Logged in successfully (Memory mode)',
         token,
-        user
+        user: userWithoutPassword
       });
     }
   } catch (error) {

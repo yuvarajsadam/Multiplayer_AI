@@ -22,6 +22,8 @@ const socketAuthMiddleware = (socket, next) => {
       id: decoded.id,
       name: decoded.name,
       email: decoded.email,
+      avatarColor: decoded.avatarColor || '#3B82F6',
+      color: decoded.avatarColor || '#3B82F6',
       tier: decoded.tier || 'free',
       isGuest: false
     };
