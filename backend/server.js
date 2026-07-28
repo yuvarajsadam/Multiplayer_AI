@@ -18,10 +18,31 @@ const registerChatHandlers = require('./sockets/chatHandler');
 const app = express();
 const server = http.createServer(app);
 
-// CORS configuration for REST & WebSockets
+// CORS configuration for REST & WebSockets (handles trailing slashes & custom domains)
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://multiplayer-ai-black.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+].filter(Boolean).map(url => url.replace(/\/$/, ''));
+
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.replace(/\/$/, '');
+    const clientUrlClean = (process.env.CLIENT_URL || '').replace(/\/$/, '');
+
+    if (
+      cleanOrigin === clientUrlClean ||
+      allowedOrigins.includes(cleanOrigin) ||
+      cleanOrigin.endsWith('.vercel.app')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
 
