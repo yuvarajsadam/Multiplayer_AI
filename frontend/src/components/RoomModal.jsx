@@ -108,18 +108,16 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
               <button
                 type="button"
                 onClick={() => setActiveTab('join')}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
-                  activeTab === 'join' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${activeTab === 'join' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  }`}
               >
                 Join Existing Room
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('create')}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
-                  activeTab === 'create' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${activeTab === 'create' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  }`}
               >
                 Create New Room
               </button>
