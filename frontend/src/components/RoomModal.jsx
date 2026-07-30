@@ -41,12 +41,11 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
     setError('');
 
     try {
-      const data = await joinRoomApi(inputRoomId.trim(), user.name);
-      if (data?.success) {
-        joinRoom(inputRoomId.trim(), data.room?.name);
+      const success = await joinRoom(inputRoomId.trim());
+      if (success) {
         onClose();
       } else {
-        setError(data?.error || 'Room does not exist. Please check the room code.');
+        setError('Room not found. Please verify the room code or create a new room.');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Room not found. Please verify the room code or create a new room.');

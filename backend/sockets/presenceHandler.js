@@ -18,6 +18,40 @@ const registerPresenceHandlers = (io, socket) => {
   socket.on('join_room', async ({ roomId, user }) => {
     if (!roomId || !user || !user.name) return;
 
+    let room = null;
+    if (getIsConnected()) {
+      try {
+        room = await Room.findOne({ roomId });
+      } catch (err) {
+        console.error('[Presence DB Error]', err.message);
+      }
+    }
+    if (!room) {
+      room = memoryStore.rooms.get(roomId);
+    }
+
+    if (!room) {
+      if (roomId === 'demo-room') {
+        const defaultRoom = { roomId: 'demo-room', name: 'Default Shared Room', activeRole: 'Coder AI', currentDraftPrompt: '', users: [] };
+        if (getIsConnected()) {
+          try {
+            room = new Room(defaultRoom);
+            await room.save();
+          } catch (e) {
+            memoryStore.rooms.set('demo-room', defaultRoom);
+            room = defaultRoom;
+          }
+        } else {
+          memoryStore.rooms.set('demo-room', defaultRoom);
+          room = defaultRoom;
+        }
+      } else {
+        socket.emit('room_error', { roomId, error: 'Room does not exist' });
+        return;
+      }
+    }
+
+    // Room is verified! Now join socket room.
     socket.join(roomId);
 
     const color = user.color || PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
@@ -31,42 +65,21 @@ const registerPresenceHandlers = (io, socket) => {
 
     activeSockets.set(socket.id, { ...userPayload, roomId });
 
-    // Update Room DB or Memory store
-    let roomUsers = [];
-    if (getIsConnected()) {
+    // Update room users
+    if (room.save && typeof room.save === 'function') {
       try {
-        let room = await Room.findOne({ roomId });
-        if (!room) {
-          if (roomId === 'demo-room') {
-            room = new Room({ roomId: 'demo-room', name: 'Default Shared Room', users: [] });
-          } else {
-            socket.emit('room_error', { error: 'Room does not exist' });
-            return;
-          }
-        }
-        // Deduplicate user by ID or socketId
-        room.users = room.users.filter(u => u.id !== userPayload.id && u.socketId !== socket.id);
+        room.users = (room.users || []).filter(u => u.id !== userPayload.id && u.socketId !== socket.id);
         room.users.push(userPayload);
         await room.save();
-        roomUsers = room.users;
       } catch (err) {
-        console.error('[Presence DB Error]', err.message);
+        console.error('[Presence Save DB Error]', err.message);
       }
     } else {
-      let room = memoryStore.rooms.get(roomId);
-      if (!room) {
-        if (roomId === 'demo-room') {
-          room = { roomId: 'demo-room', name: 'Default Shared Room', activeRole: 'Coder AI', currentDraftPrompt: '', users: [] };
-          memoryStore.rooms.set(roomId, room);
-        } else {
-          socket.emit('room_error', { error: 'Room does not exist' });
-          return;
-        }
-      }
-      room.users = room.users.filter(u => u.id !== userPayload.id && u.socketId !== socket.id);
+      room.users = (room.users || []).filter(u => u.id !== userPayload.id && u.socketId !== socket.id);
       room.users.push(userPayload);
-      roomUsers = room.users;
     }
+
+    const roomUsers = room.users;
 
     // Broadcast user joined to room
     io.to(roomId).emit('user_joined', {

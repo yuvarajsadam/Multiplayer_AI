@@ -66,22 +66,41 @@ const joinRoom = async (req, res) => {
 
     let room = null;
     if (getIsConnected()) {
-      room = await Room.findOne({ roomId });
-      if (!room && roomId === 'demo-room') {
-        const defaultRoomData = {
-          roomId: 'demo-room',
-          name: 'Default Shared Room',
-          ownerId: 'system',
-          activeRole: 'Coder AI',
-          currentDraftPrompt: '',
-          users: [],
-          createdAt: new Date()
-        };
-        room = new Room(defaultRoomData);
-        await room.save();
+      try {
+        room = await Room.findOne({ roomId });
+      } catch (err) {
+        console.error('[Find Room DB Error]', err.message);
       }
-    } else {
+    }
+    
+    // Fallback check in memoryStore
+    if (!room) {
       room = memoryStore.rooms.get(roomId);
+    }
+
+    // Auto-seed default demo-room if missing
+    if (!room && roomId === 'demo-room') {
+      const defaultRoomData = {
+        roomId: 'demo-room',
+        name: 'Default Shared Room',
+        ownerId: 'system',
+        activeRole: 'Coder AI',
+        currentDraftPrompt: '',
+        users: [],
+        createdAt: new Date()
+      };
+      if (getIsConnected()) {
+        try {
+          room = new Room(defaultRoomData);
+          await room.save();
+        } catch (e) {
+          memoryStore.rooms.set('demo-room', defaultRoomData);
+          room = defaultRoomData;
+        }
+      } else {
+        memoryStore.rooms.set('demo-room', defaultRoomData);
+        room = defaultRoomData;
+      }
     }
 
     if (!room) {

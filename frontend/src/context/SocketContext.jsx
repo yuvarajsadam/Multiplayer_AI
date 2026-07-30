@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { getRoomHistoryApi, getUserRoomsApi } from '../services/api';
+import { getRoomHistoryApi, getUserRoomsApi, joinRoomApi } from '../services/api';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
@@ -209,6 +209,16 @@ export const SocketProvider = ({ children }) => {
       setChatHistory(prev => prev.map(msg => msg.messageId === messageId ? { ...msg, votes } : msg));
     };
 
+    const handleRoomError = ({ roomId: errRoomId, error }) => {
+      console.warn('[Room Error]', error);
+      setJoinedRooms(prev => {
+        const updated = prev.filter(r => r.roomId !== errRoomId);
+        localStorage.setItem('ai_workspace_joined_rooms', JSON.stringify(updated));
+        return updated;
+      });
+      setRoomId(prevId => prevId === errRoomId ? 'demo-room' : prevId);
+    };
+
     socket.on('room_state', handleRoomState);
     socket.on('user_joined', handleUserJoined);
     socket.on('user_left', handleUserLeft);
@@ -219,6 +229,7 @@ export const SocketProvider = ({ children }) => {
     socket.on('ai_stream_chunk', handleAiStreamChunk);
     socket.on('ai_stream_end', handleAiStreamEnd);
     socket.on('prompt_voted', handlePromptVoted);
+    socket.on('room_error', handleRoomError);
 
     return () => {
       socket.off('room_state', handleRoomState);
@@ -231,23 +242,43 @@ export const SocketProvider = ({ children }) => {
       socket.off('ai_stream_chunk', handleAiStreamChunk);
       socket.off('ai_stream_end', handleAiStreamEnd);
       socket.off('prompt_voted', handlePromptVoted);
+      socket.off('room_error', handleRoomError);
     };
   }, [socket, roomId, user.id]);
 
   // Action Methods
-  const joinRoom = useCallback((newRoomId, roomTitle = null) => {
-    if (!socket || !newRoomId) return;
-    setRoomId(newRoomId);
+  const joinRoom = useCallback(async (newRoomId, roomTitle = null) => {
+    if (!socket || !newRoomId) return false;
 
-    // Save to joined rooms list
-    setJoinedRooms(prev => {
-      if (prev.some(r => r.roomId === newRoomId)) return prev;
-      const updated = [...prev, { roomId: newRoomId, name: roomTitle || `Room #${newRoomId}` }];
-      localStorage.setItem('ai_workspace_joined_rooms', JSON.stringify(updated));
-      return updated;
-    });
+    try {
+      // Verify room exists on backend via API first
+      const data = await joinRoomApi(newRoomId, user.name);
+      if (!data?.success) {
+        throw new Error(data?.error || 'Room not found');
+      }
 
-    socket.emit('join_room', { roomId: newRoomId, user });
+      setRoomId(newRoomId);
+
+      // Save to joined rooms list
+      setJoinedRooms(prev => {
+        if (prev.some(r => r.roomId === newRoomId)) return prev;
+        const updated = [...prev, { roomId: newRoomId, name: roomTitle || data.room?.name || `Room #${newRoomId}` }];
+        localStorage.setItem('ai_workspace_joined_rooms', JSON.stringify(updated));
+        return updated;
+      });
+
+      socket.emit('join_room', { roomId: newRoomId, user });
+      return true;
+    } catch (err) {
+      console.warn('[Join Room Error]', err.response?.data?.error || err.message);
+      // Remove invalid room from local list if it was cached
+      setJoinedRooms(prev => {
+        const updated = prev.filter(r => r.roomId !== newRoomId);
+        localStorage.setItem('ai_workspace_joined_rooms', JSON.stringify(updated));
+        return updated;
+      });
+      return false;
+    }
   }, [socket, user]);
 
   const sendDraftPrompt = useCallback((promptText) => {
