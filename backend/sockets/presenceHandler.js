@@ -37,7 +37,12 @@ const registerPresenceHandlers = (io, socket) => {
       try {
         let room = await Room.findOne({ roomId });
         if (!room) {
-          room = new Room({ roomId, name: `Room #${roomId}`, users: [] });
+          if (roomId === 'demo-room') {
+            room = new Room({ roomId: 'demo-room', name: 'Default Shared Room', users: [] });
+          } else {
+            socket.emit('room_error', { error: 'Room does not exist' });
+            return;
+          }
         }
         // Deduplicate user by ID or socketId
         room.users = room.users.filter(u => u.id !== userPayload.id && u.socketId !== socket.id);
@@ -50,8 +55,13 @@ const registerPresenceHandlers = (io, socket) => {
     } else {
       let room = memoryStore.rooms.get(roomId);
       if (!room) {
-        room = { roomId, name: `Room #${roomId}`, activeRole: 'Coder AI', currentDraftPrompt: '', users: [] };
-        memoryStore.rooms.set(roomId, room);
+        if (roomId === 'demo-room') {
+          room = { roomId: 'demo-room', name: 'Default Shared Room', activeRole: 'Coder AI', currentDraftPrompt: '', users: [] };
+          memoryStore.rooms.set(roomId, room);
+        } else {
+          socket.emit('room_error', { error: 'Room does not exist' });
+          return;
+        }
       }
       room.users = room.users.filter(u => u.id !== userPayload.id && u.socketId !== socket.id);
       room.users.push(userPayload);

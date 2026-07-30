@@ -9,6 +9,18 @@ const memoryStore = {
   messages: new Map()
 };
 
+// Seed default demo-room in memoryStore
+memoryStore.rooms.set('demo-room', {
+  roomId: 'demo-room',
+  name: 'Default Shared Room',
+  ownerId: 'system',
+  activeRole: 'Coder AI',
+  currentDraftPrompt: '',
+  users: [],
+  createdAt: new Date()
+});
+memoryStore.messages.set('demo-room', []);
+
 const createRoom = async (req, res) => {
   try {
     const { name = 'Collaborative AI Workspace', isPrivate = false } = req.body;
@@ -55,29 +67,28 @@ const joinRoom = async (req, res) => {
     let room = null;
     if (getIsConnected()) {
       room = await Room.findOne({ roomId });
+      if (!room && roomId === 'demo-room') {
+        const defaultRoomData = {
+          roomId: 'demo-room',
+          name: 'Default Shared Room',
+          ownerId: 'system',
+          activeRole: 'Coder AI',
+          currentDraftPrompt: '',
+          users: [],
+          createdAt: new Date()
+        };
+        room = new Room(defaultRoomData);
+        await room.save();
+      }
     } else {
       room = memoryStore.rooms.get(roomId);
     }
 
     if (!room) {
-      // Auto-create room if missing to ensure friction-free share link entry
-      const newRoomData = {
-        roomId,
-        name: `Room #${roomId}`,
-        ownerId: req.user?.id || 'system',
-        activeRole: 'Coder AI',
-        currentDraftPrompt: '',
-        users: [],
-        createdAt: new Date()
-      };
-      if (getIsConnected()) {
-        room = new Room(newRoomData);
-        await room.save();
-      } else {
-        memoryStore.rooms.set(roomId, newRoomData);
-        memoryStore.messages.set(roomId, []);
-        room = newRoomData;
-      }
+      return res.status(404).json({
+        success: false,
+        error: 'Room not found. Please verify the room code or create a new room.'
+      });
     }
 
     return res.status(200).json({

@@ -43,15 +43,13 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
     try {
       const data = await joinRoomApi(inputRoomId.trim(), user.name);
       if (data?.success) {
-        joinRoom(inputRoomId.trim());
+        joinRoom(inputRoomId.trim(), data.room?.name);
         onClose();
       } else {
-        setError(data?.error || 'Failed to join room');
+        setError(data?.error || 'Room does not exist. Please check the room code.');
       }
     } catch (err) {
-      // Auto-join room even if API errors to keep demo fully resilient
-      joinRoom(inputRoomId.trim());
-      onClose();
+      setError(err.response?.data?.error || 'Room not found. Please verify the room code or create a new room.');
     } finally {
       setLoading(false);
     }
