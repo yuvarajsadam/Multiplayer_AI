@@ -1,65 +1,7 @@
 # Multiplayer AI Workspace – Real-Time Collaborative AI System
 
 > A production-ready web platform where multiple users join shared workspace rooms to edit prompts, guide AI responses, switch AI personas dynamically, stream token-by-token responses live, track prompt versions, and see real-time presence (Google Docs for AI interactions).
-
----
-
-## 📁 Project Folder Structure
-
-```
-differnt folder/
-├── backend/
-│   ├── config/
-│   │   └── db.js                 # MongoDB connection & fallback handler
-│   ├── controllers/
-│   │   └── roomController.js     # REST APIs for room creation, joining & history
-│   ├── models/
-│   │   ├── User.js               # Mongoose schema for User
-│   │   ├── Room.js               # Mongoose schema for Room & active draft
-│   │   └── Message.js            # Mongoose schema for Messages & Versions
-│   ├── services/
-│   │   └── ai/
-│   │       ├── personas.js       # AI Personas (Coder AI, Architect AI, Reviewer AI)
-│   │       └── openaiService.js  # OpenAI API token-by-token streaming & fallback
-│   ├── sockets/
-│   │   ├── presenceHandler.js    # User join, leave & typing indicator sockets
-│   │   ├── roomHandler.js        # Collaborative draft sync, roles & voting
-│   │   └── chatHandler.js        # Prompt execution & AI stream broadcast
-│   ├── .env.example              # Environment variables template
-│   ├── package.json
-│   └── server.js                 # Express server & Socket.io engine setup
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Header.jsx                # Header bar, connection badge & role selector
-│   │   │   ├── Sidebar.jsx               # Workspace room info, presence & templates
-│   │   │   ├── UserPresence.jsx          # Live online users & typing indicators
-│   │   │   ├── RoleSelector.jsx          # AI Persona switcher dropdown
-│   │   │   ├── SharedPromptEditor.jsx    # Real-time multi-user prompt editor
-│   │   │   ├── ChatArea.jsx              # Main chat stream area & auto-scroll
-│   │   │   ├── ChatMessage.jsx           # Prompt versioning card & response viewer
-│   │   │   ├── VersionHistoryModal.jsx   # Prompt v1, v2, v3 comparison modal
-│   │   │   ├── TypingIndicator.jsx       # Live typing indicator component
-│   │   │   └── RoomModal.jsx             # Room creation & joining dialog
-│   │   ├── context/
-│   │   │   └── SocketContext.jsx         # Global Socket.io state provider
-│   │   ├── services/
-│   │   │   └── api.js                    # REST API client
-│   │   ├── App.jsx                       # Main workspace application component
-│   │   ├── index.css                     # Tailwind CSS & Glassmorphism styles
-│   │   └── main.jsx                      # React DOM root entry point
-│   ├── index.html
-│   ├── postcss.config.js
-│   ├── tailwind.config.js
-│   ├── vite.config.js
-│   └── package.json
-│
-├── sample-data.json                     # Initial sample test data
-└── README.md                            # Comprehensive project guide
-```
-
+ 
 ---
 
 ## ⚡ Core Features
