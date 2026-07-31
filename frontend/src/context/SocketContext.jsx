@@ -254,7 +254,7 @@ export const SocketProvider = ({ children }) => {
       // Verify room exists on backend via API first
       const data = await joinRoomApi(newRoomId, user.name);
       if (!data?.success) {
-        throw new Error(data?.error || 'Room not found');
+        throw new Error(data?.error || 'Room does not exist in database');
       }
 
       setRoomId(newRoomId);

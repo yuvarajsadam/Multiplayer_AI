@@ -106,7 +106,7 @@ const joinRoom = async (req, res) => {
     if (!room) {
       return res.status(404).json({
         success: false,
-        error: 'Room not found. Please verify the room code or create a new room.'
+        error: 'Room does not exist in database'
       });
     }
 

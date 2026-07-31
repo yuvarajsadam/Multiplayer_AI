@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
 import { createRoomApi, joinRoomApi } from '../services/api';
-import { X, Plus, LogIn, Sparkles, Hash, User } from 'lucide-react';
+import { X, Plus, LogIn, Sparkles, Hash, User, ShieldAlert } from 'lucide-react';
 
-const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
+const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '', onOpenAuthModal }) => {
   const { joinRoom, user, updateUserProfile } = useSocket();
+  const { user: saasUser } = useAuth();
   const [activeTab, setActiveTab] = useState('join');
   const [inputRoomId, setInputRoomId] = useState('');
   const [roomNameInput, setRoomNameInput] = useState('AI Pair Programming Session');
@@ -16,6 +18,12 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
+    if (!saasUser) {
+      setError('Please login or create an account first to create a room.');
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -36,19 +44,31 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
 
   const handleJoinRoom = async (e) => {
     e.preventDefault();
-    if (!inputRoomId.trim()) return;
+    if (!saasUser) {
+      setError('Please login or create an account first to join a room.');
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
+    const targetRoom = inputRoomId.trim();
+    if (!targetRoom) return;
     setLoading(true);
     setError('');
 
     try {
-      const success = await joinRoom(inputRoomId.trim());
-      if (success) {
-        onClose();
+      const data = await joinRoomApi(targetRoom, saasUser.name);
+      if (data?.success) {
+        const success = await joinRoom(targetRoom);
+        if (success) {
+          onClose();
+        } else {
+          setError('Room does not exist in database');
+        }
       } else {
-        setError('Room not found. Please verify the room code or create a new room.');
+        setError(data?.error || 'Room does not exist in database');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Room not found. Please verify the room code or create a new room.');
+      setError(err.response?.data?.error || 'Room does not exist in database');
     } finally {
       setLoading(false);
     }
@@ -71,7 +91,7 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
               {mode === 'profile' ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
             </div>
             <h3 className="font-bold text-slate-100 text-sm">
-              {mode === 'profile' ? 'Update Engineer Profile' : 'Workspace Room System'}
+              {mode === 'profile' ? 'Update Profile' : 'Workspace Room System'}
             </h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
@@ -106,7 +126,7 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
             <div className="flex bg-slate-900 p-1 rounded-xl mb-4 border border-slate-800">
               <button
                 type="button"
-                onClick={() => setActiveTab('join')}
+                onClick={() => { setActiveTab('join'); setError(''); }}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${activeTab === 'join' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                   }`}
               >
@@ -114,7 +134,7 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('create')}
+                onClick={() => { setActiveTab('create'); setError(''); }}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${activeTab === 'create' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
                   }`}
               >
@@ -123,8 +143,23 @@ const RoomModal = ({ isOpen, onClose, mode = 'room', initialName = '' }) => {
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs p-2.5 rounded-lg mb-3">
-                {error}
+              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs p-2.5 rounded-lg mb-3 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {!saasUser && (
+              <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs p-2.5 rounded-lg mb-3 flex items-center justify-between">
+                <span>Login required to access rooms.</span>
+                {onOpenAuthModal && (
+                  <button
+                    onClick={() => { onClose(); onOpenAuthModal(); }}
+                    className="font-bold underline hover:text-white"
+                  >
+                    Login / Sign Up
+                  </button>
+                )}
               </div>
             )}
 

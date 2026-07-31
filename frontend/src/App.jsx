@@ -13,6 +13,7 @@ const WorkspaceContent = () => {
   const { sendDraftPrompt, switchRole } = useSocket();
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [selectedMessageForVersions, setSelectedMessageForVersions] = useState(null);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -57,6 +58,7 @@ const WorkspaceContent = () => {
       <Header
         onOpenRoomModal={() => setIsOnboardingOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
       />
 
       {/* Main Workspace Workspace */}
@@ -66,6 +68,8 @@ const WorkspaceContent = () => {
           onOpenRoomModal={() => setIsOnboardingOpen(true)}
           onOpenVersionModal={() => handleOpenVersionModal(null)}
           onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Center Main Chat & Shared Prompt Workspace */}
@@ -87,9 +91,10 @@ const WorkspaceContent = () => {
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
         defaultRoomId={urlRoomId}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
-      {/* SaaS Auth Login & Register Modal */}
+      {/* Auth Login & Register Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}

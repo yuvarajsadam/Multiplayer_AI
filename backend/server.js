@@ -65,9 +65,9 @@ app.post('/api/auth/login', authLimiter, login);
 app.get('/api/auth/me', authMiddleware, getMe);
 app.get('/api/usage/stats', authMiddleware, getUsageStats);
 
-// Multi-Room REST Routes
-app.post('/api/rooms/create', optionalAuthMiddleware, createRoom);
-app.post('/api/rooms/join', optionalAuthMiddleware, joinRoom);
+// Multi-Room REST Routes (Protected by Auth)
+app.post('/api/rooms/create', authMiddleware, createRoom);
+app.post('/api/rooms/join', authMiddleware, joinRoom);
 app.get('/api/rooms/my-rooms', authMiddleware, getUserRooms);
 app.delete('/api/rooms/:roomId', authMiddleware, deleteRoom);
 app.get('/api/rooms/:roomId', getRoomDetails);
