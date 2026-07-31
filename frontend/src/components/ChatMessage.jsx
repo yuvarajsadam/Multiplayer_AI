@@ -8,6 +8,94 @@ const ROLE_CONFIG = {
   'Reviewer AI': { icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' }
 };
 
+const formatInlineText = (text) => {
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith('**') && p.endsWith('**')) {
+      return <strong key={i} className="font-semibold text-slate-100">{p.slice(2, -2)}</strong>;
+    }
+    if (p.startsWith('`') && p.endsWith('`')) {
+      return <code key={i} className="bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded text-xs font-mono">{p.slice(1, -1)}</code>;
+    }
+    return p;
+  });
+};
+
+const FormattedMarkdown = ({ content, isStreaming }) => {
+  if (!content) {
+    return isStreaming ? <span className="text-slate-400 italic">Thinking...</span> : null;
+  }
+
+  const parts = content.split(/(```[\s\S]*?```)/g);
+
+  return (
+    <div className={`space-y-2 text-sm text-slate-200 leading-relaxed ${isStreaming ? 'streaming-cursor' : ''}`}>
+      {parts.map((part, idx) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const match = part.match(/^```(\w+)?\n([\s\S]*?)```$/);
+          const lang = match ? match[1] || 'code' : 'code';
+          const codeText = match ? match[2] : part.slice(3, -3);
+
+          return (
+            <div key={idx} className="my-3 rounded-lg overflow-hidden border border-slate-700/80 bg-slate-950/90 shadow-md">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-xs font-mono text-slate-400">
+                <span className="uppercase text-[10px] font-bold tracking-wider text-indigo-400">{lang}</span>
+              </div>
+              <pre className="p-3 font-mono text-xs overflow-x-auto text-emerald-300 leading-relaxed">
+                <code>{codeText}</code>
+              </pre>
+            </div>
+          );
+        }
+
+        const lines = part.split('\n');
+        return (
+          <div key={idx} className="space-y-1">
+            {lines.map((line, lineIdx) => {
+              if (!line.trim()) return <div key={lineIdx} className="h-1" />;
+
+              if (line.startsWith('### ')) {
+                return (
+                  <h3 key={lineIdx} className="text-base font-bold text-slate-100 mt-2 mb-1">
+                    {formatInlineText(line.replace('### ', ''))}
+                  </h3>
+                );
+              }
+              if (line.startsWith('## ')) {
+                return (
+                  <h2 key={lineIdx} className="text-lg font-bold text-slate-100 mt-2 mb-1">
+                    {formatInlineText(line.replace('## ', ''))}
+                  </h2>
+                );
+              }
+              if (line.startsWith('> ')) {
+                return (
+                  <blockquote key={lineIdx} className="border-l-2 border-indigo-500/80 pl-3 py-1 text-slate-300 italic bg-indigo-500/5 rounded-r-md my-1">
+                    {formatInlineText(line.replace('> ', ''))}
+                  </blockquote>
+                );
+              }
+              if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+                return (
+                  <li key={lineIdx} className="ml-4 list-disc text-slate-200 pl-1">
+                    {formatInlineText(line.trim().replace(/^[-*]\s+/, ''))}
+                  </li>
+                );
+              }
+
+              return (
+                <p key={lineIdx} className="text-slate-200">
+                  {formatInlineText(line)}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const ChatMessage = ({ message, onEditPrompt, onViewVersions }) => {
   const { votePrompt, user } = useSocket();
   const [copied, setCopied] = useState(false);
@@ -18,7 +106,7 @@ const ChatMessage = ({ message, onEditPrompt, onViewVersions }) => {
   const upvotes = message.votes?.upvotes || [];
   const downvotes = message.votes?.downvotes || [];
   const hasUpvoted = upvotes.includes(user.id);
-  const hasDownvoted = downvotes.includes(user.id);
+  const hasDownvoted = hasUpvoted ? false : downvotes.includes(user.id);
 
   const handleCopyResponse = () => {
     if (!message.response) return;
@@ -108,9 +196,7 @@ const ChatMessage = ({ message, onEditPrompt, onViewVersions }) => {
         </div>
 
         {/* AI Output Content */}
-        <div className={`text-sm text-slate-200 leading-relaxed font-mono whitespace-pre-wrap ${message.isStreaming ? 'streaming-cursor' : ''}`}>
-          {message.response || (message.isStreaming ? 'Thinking...' : '')}
-        </div>
+        <FormattedMarkdown content={message.response} isStreaming={message.isStreaming} />
 
         {/* Voting & Metadata Bar */}
         {!message.isStreaming && message.response && (

@@ -104,8 +104,8 @@ const streamAIResponse = async ({ prompt, role = 'Coder AI', history = [], userI
 };
 
 const simulateTokenStream = ({ prompt, role, persona, userId, roomId, onChunk, onEnd }) => {
-  let baseResponse = persona.sampleResponses[Math.floor(Math.random() * persona.sampleResponses.length)];
-  let responseContent = `[${role} Gemini Response]\n\nRegarding your prompt:\n> "${prompt}"\n\n${baseResponse}\n\n*Collaborative AI insights powered by Google Gemini.*`;
+  const baseResponse = persona.sampleResponses[Math.floor(Math.random() * persona.sampleResponses.length)];
+  const responseContent = baseResponse;
 
   const tokens = responseContent.match(/(\s+|\S+)/g) || [responseContent];
   let fullText = '';
