@@ -7,7 +7,7 @@
 ## ⚡ Core Features
 
 1. **Room System**:
-   - Create unique room codes or join via share link (`?room=code`).
+   - Create unique room codes or join via share (`?room=code`).
    - Multi-user collaborative workspaces.
 
 2. **Real-Time Collaboration**:
